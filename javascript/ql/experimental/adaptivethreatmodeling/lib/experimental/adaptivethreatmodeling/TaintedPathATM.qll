@@ -25,7 +25,7 @@ module SinkEndpointFilter {
    * effective sink.
    */
   string getAReasonSinkExcluded(DataFlow::Node sinkCandidate) {
-    result = StandardEndpointFilters::getAReasonSinkExcluded(sinkCandidate)
+    result = StandardEndpointFilters::getAnEndpointLabel(sinkCandidate)
     or
     // Require path injection sink candidates to be (a) arguments to external library calls
     // (possibly indirectly), or (b) heuristic sinks.

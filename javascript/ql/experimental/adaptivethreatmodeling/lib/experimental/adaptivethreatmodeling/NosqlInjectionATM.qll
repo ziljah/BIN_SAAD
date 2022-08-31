@@ -19,7 +19,7 @@ module SinkEndpointFilter {
    * effective sink.
    */
   string getAReasonSinkExcluded(DataFlow::Node sinkCandidate) {
-    result = StandardEndpointFilters::getAReasonSinkExcluded(sinkCandidate)
+    result = StandardEndpointFilters::getAnEndpointLabel(sinkCandidate)
     or
     exists(DataFlow::CallNode call | sinkCandidate = call.getAnArgument() |
       // additional databases accesses that aren't modeled yet

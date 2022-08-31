@@ -25,7 +25,7 @@ module SinkEndpointFilter {
    * effective sink.
    */
   string getAReasonSinkExcluded(DataFlow::Node sinkCandidate) {
-    result = StandardEndpointFilters::getAReasonSinkExcluded(sinkCandidate)
+    result = StandardEndpointFilters::getAnEndpointLabel(sinkCandidate)
     or
     exists(DataFlow::CallNode call | sinkCandidate = call.getAnArgument() |
       // prepared statements for SQL

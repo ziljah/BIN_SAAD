@@ -12,7 +12,7 @@ private import semmle.javascript.heuristics.SyntacticHeuristics
 private import CoreKnowledge as CoreKnowledge
 
 string getAnEndpointLabel(DataFlow::Node n) {
-  result = getAReasonSinkExcluded(n)
+  result = "legacy/reason-sink-excluded/" + getAReasonSinkExcluded(n)
 }
 
 /** Provides a set of reasons why a given data flow node should be excluded as a sink candidate. */

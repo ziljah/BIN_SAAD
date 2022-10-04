@@ -5,12 +5,10 @@ import com.github.codeql.utils.versions.codeQlWithHasQuestionMark
 import com.github.codeql.utils.versions.isRawType
 import com.semmle.extractor.java.OdasaOutput
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
-import org.jetbrains.kotlin.backend.common.ir.allOverridden
-import org.jetbrains.kotlin.backend.common.ir.isFinalClass
+import org.jetbrains.kotlin.backend.common.ir.*
 import org.jetbrains.kotlin.backend.common.lower.parents
 import org.jetbrains.kotlin.backend.common.lower.parentsWithSelf
 import org.jetbrains.kotlin.backend.jvm.ir.propertyIfAccessor
-import org.jetbrains.kotlin.builtins.StandardNames
 import org.jetbrains.kotlin.codegen.JvmCodegenUtil
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.ir.ObsoleteDescriptorBasedAPI
@@ -26,7 +24,6 @@ import org.jetbrains.kotlin.load.java.sources.JavaSourceElement
 import org.jetbrains.kotlin.load.java.structure.*
 import org.jetbrains.kotlin.load.kotlin.getJvmModuleNameForDeserializedDescriptor
 import org.jetbrains.kotlin.name.FqName
-import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.name.NameUtils
 import org.jetbrains.kotlin.name.SpecialNames
 import org.jetbrains.kotlin.types.Variance
@@ -329,11 +326,11 @@ open class KotlinUsesExtractor(
         if (replacementClass === parentClass)
             return f
         return globalExtensionState.syntheticToRealFunctionMap.getOrPut(f) {
-            val result = replacementClass.declarations.find { replacementDecl ->
+            val result = replacementClass.declarations.findSubType<IrSimpleFunction> { replacementDecl ->
                 replacementDecl is IrSimpleFunction && replacementDecl.name == f.name && replacementDecl.valueParameters.size == f.valueParameters.size && replacementDecl.valueParameters.zip(f.valueParameters).all {
                     erase(it.first.type) == erase(it.second.type)
                 }
-            } as IrFunction?
+            }
             if (result == null) {
                 logger.warn("Failed to replace synthetic class function ${f.name}")
             } else {
@@ -354,9 +351,9 @@ open class KotlinUsesExtractor(
         if (replacementClass === parentClass)
             return f
         return globalExtensionState.syntheticToRealFieldMap.getOrPut(f) {
-            val result = replacementClass.declarations.find { replacementDecl ->
-                replacementDecl is IrField && replacementDecl.name == f.name
-            } as IrField?
+            val result = replacementClass.declarations.findSubType<IrField> { replacementDecl ->
+                replacementDecl.name == f.name
+            }
             if (result == null) {
                 logger.warn("Failed to replace synthetic class field ${f.name}")
             } else {
@@ -652,9 +649,9 @@ open class KotlinUsesExtractor(
 
             (s.isBoxedArray && s.arguments.isNotEmpty()) || s.isPrimitiveArray() -> {
 
-                fun replaceComponentTypeWithAny(t: IrSimpleType, dimensions: Int): IrSimpleType =
+                fun replaceComponentTypeWithAny(t: IrSimpleType, dimensions: Int): IrType =
                     if (dimensions == 0)
-                        pluginContext.irBuiltIns.anyType as IrSimpleType
+                        pluginContext.irBuiltIns.anyType
                     else
                         t.toBuilder().also { it.arguments = (it.arguments[0] as IrTypeProjection)
                             .let { oldArg ->
@@ -662,7 +659,7 @@ open class KotlinUsesExtractor(
                             }
                         }.buildSimpleType()
 
-                var componentType = s.getArrayElementType(pluginContext.irBuiltIns)
+                var componentType: IrType = s.getArrayElementType(pluginContext.irBuiltIns)
                 var isPrimitiveArray = false
                 var dimensions = 0
                 var elementType: IrType = s
@@ -670,11 +667,15 @@ open class KotlinUsesExtractor(
                     dimensions++
                     if (elementType.isPrimitiveArray())
                         isPrimitiveArray = true
-                    if (((elementType as IrSimpleType).arguments.singleOrNull() as? IrTypeProjection)?.variance == Variance.IN_VARIANCE) {
-                        // Because Java's arrays are covariant, Kotlin will render Array<in X> as Object[], Array<Array<in X>> as Object[][] etc.
-                        componentType = replaceComponentTypeWithAny(s, dimensions - 1)
-                        elementType = pluginContext.irBuiltIns.anyType as IrSimpleType
-                        break
+                    if (elementType is IrSimpleType) {
+                        if ((elementType.arguments.singleOrNull() as? IrTypeProjection)?.variance == Variance.IN_VARIANCE) {
+                            // Because Java's arrays are covariant, Kotlin will render Array<in X> as Object[], Array<Array<in X>> as Object[][] etc.
+                            componentType = replaceComponentTypeWithAny(s, dimensions - 1)
+                            elementType = pluginContext.irBuiltIns.anyType
+                            break
+                        }
+                    } else {
+                        logger.warn("Unexpected element type representation ${elementType.javaClass} for ${s.render()}")
                     }
                     elementType = elementType.getArrayElementType(pluginContext.irBuiltIns)
                 }
@@ -1100,7 +1101,7 @@ open class KotlinUsesExtractor(
             return f.returnType
         }
 
-        val otherKeySet = parentClass.declarations.filterIsInstance<IrFunction>().find { it.name.asString() == "keySet" && it.valueParameters.size == 1 }
+        val otherKeySet = parentClass.declarations.findSubType<IrFunction> { it.name.asString() == "keySet" && it.valueParameters.size == 1 }
             ?: return f.returnType
 
         return otherKeySet.returnType.codeQlWithHasQuestionMark(false)
@@ -1172,7 +1173,7 @@ open class KotlinUsesExtractor(
         "kotlin.Boolean", "kotlin.Byte", "kotlin.Char", "kotlin.Double", "kotlin.Float", "kotlin.Int", "kotlin.Long", "kotlin.Number", "kotlin.Short"
     )
 
-    private fun kotlinFunctionToJavaEquivalent(f: IrFunction, noReplace: Boolean) =
+    private fun kotlinFunctionToJavaEquivalent(f: IrFunction, noReplace: Boolean): IrFunction =
         if (noReplace)
             f
         else
@@ -1180,8 +1181,7 @@ open class KotlinUsesExtractor(
                 getJavaEquivalentClass(parentClass)?.let { javaClass ->
                     if (javaClass != parentClass)
                         // Look for an exact type match...
-                        javaClass.declarations.find { decl ->
-                            decl is IrFunction &&
+                        javaClass.declarations.findSubType<IrFunction> { decl ->
                             decl.name == f.name &&
                             decl.valueParameters.size == f.valueParameters.size &&
                             // Note matching by classifier not the whole type so that generic arguments are allowed to differ,
@@ -1190,14 +1190,13 @@ open class KotlinUsesExtractor(
                             decl.valueParameters.zip(f.valueParameters).all { p -> p.first.type.classifierOrNull == p.second.type.classifierOrNull }
                         } ?:
                         // Or if there is none, look for the only viable overload
-                        javaClass.declarations.singleOrNull { decl ->
-                            decl is IrFunction &&
+                        javaClass.declarations.singleOrNullSubType<IrFunction> { decl ->
                             decl.name == f.name &&
                             decl.valueParameters.size == f.valueParameters.size
                         } ?:
                         // Or check property accessors:
                         if (f.isAccessor) {
-                            val prop = javaClass.declarations.filterIsInstance<IrProperty>().find { decl ->
+                            val prop = javaClass.declarations.findSubType<IrProperty> { decl ->
                                 decl.name == (f.propertyIfAccessor as IrProperty).name
                             }
                             if (prop?.getter?.name == f.name)
@@ -1217,7 +1216,7 @@ open class KotlinUsesExtractor(
                     else
                         null
                 }
-            } as IrFunction? ?: f
+            } ?: f
 
     fun <T: DbCallable> useFunction(f: IrFunction, classTypeArgsIncludingOuterClasses: List<IrTypeArgument>? = null, noReplace: Boolean = false): Label<out T> {
         return useFunction(f, null, classTypeArgsIncludingOuterClasses, noReplace)
@@ -1419,12 +1418,11 @@ open class KotlinUsesExtractor(
         for(t in subbedSupertypes) {
             when(t) {
                 is IrSimpleType -> {
-                    when (t.classifier.owner) {
+                    val owner = t.classifier.owner
+                    when (owner) {
                         is IrClass -> {
-                            val classifier: IrClassifierSymbol = t.classifier
-                            val tcls: IrClass = classifier.owner as IrClass
                             val typeArgs = if (t.arguments.isNotEmpty() && mode is ExtractSupertypesMode.Raw) null else t.arguments
-                            val l = useClassInstance(tcls, typeArgs, inReceiverContext).typeResult.id
+                            val l = useClassInstance(owner, typeArgs, inReceiverContext).typeResult.id
                             tw.writeExtendsReftype(id, l)
                         }
                         else -> {
@@ -1462,13 +1460,13 @@ open class KotlinUsesExtractor(
                 return eraseTypeParameter(owner)
             }
 
-            if (t.isArray() || t.isNullableArray()) {
-                val elementType = t.getArrayElementType(pluginContext.irBuiltIns)
-                val erasedElementType = erase(elementType)
-                return (classifier as IrClassSymbol).typeWith(erasedElementType).codeQlWithHasQuestionMark(t.hasQuestionMark)
-            }
-
             if (owner is IrClass) {
+                if (t.isArray() || t.isNullableArray()) {
+                    val elementType = t.getArrayElementType(pluginContext.irBuiltIns)
+                    val erasedElementType = erase(elementType)
+                    return owner.typeWith(erasedElementType).codeQlWithHasQuestionMark(t.hasQuestionMark)
+                }
+
                 return if (t.arguments.isNotEmpty())
                     t.addAnnotations(listOf(RawTypeAnnotation.annotationConstructor))
                 else
@@ -1577,7 +1575,7 @@ open class KotlinUsesExtractor(
     fun useEnumEntry(ee: IrEnumEntry): Label<out DbField> =
         tw.getLabelFor(getEnumEntryLabel(ee))
 
-    private fun getTypeAliasLabel(ta: IrTypeAlias): String {
+    fun getTypeAliasLabel(ta: IrTypeAlias): String {
         val parentId = useDeclarationParent(ta.parent, true)
         return "@\"type_alias;{$parentId};${ta.name.asString()}\""
     }

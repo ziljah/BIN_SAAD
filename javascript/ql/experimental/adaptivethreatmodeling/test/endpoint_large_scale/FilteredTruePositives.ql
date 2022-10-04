@@ -17,10 +17,10 @@ import semmle.javascript.security.dataflow.SqlInjectionCustomizations
 import semmle.javascript.security.dataflow.TaintedPathCustomizations
 import semmle.javascript.security.dataflow.DomBasedXssCustomizations
 import experimental.adaptivethreatmodeling.StandardEndpointFilters as StandardEndpointFilters
-import experimental.adaptivethreatmodeling.NosqlInjectionATM as NosqlInjectionATM
-import experimental.adaptivethreatmodeling.SqlInjectionATM as SqlInjectionATM
-import experimental.adaptivethreatmodeling.TaintedPathATM as TaintedPathATM
-import experimental.adaptivethreatmodeling.XssATM as XssATM
+import experimental.adaptivethreatmodeling.NosqlInjectionATM as NosqlInjectionAtm
+import experimental.adaptivethreatmodeling.SqlInjectionATM as SqlInjectionAtm
+import experimental.adaptivethreatmodeling.TaintedPathATM as TaintedPathAtm
+import experimental.adaptivethreatmodeling.XssATM as XssAtm
 
 bindingset[reason]
 string dropPrefix(string reason) {
@@ -35,18 +35,15 @@ query predicate nosqlFilteredTruePositives(DataFlow::Node endpoint, string reaso
 
 query predicate sqlFilteredTruePositives(DataFlow::Node endpoint, string reason) {
   endpoint instanceof SqlInjection::Sink and
-  reason = dropPrefix(SqlInjectionATM::SinkEndpointFilter::getAReasonSinkExcluded(endpoint)) and
-  reason != "argument to modeled function"
+  reason = dropPrefix(SqlInjectionATM::SinkEndpointFilter::getAReasonSinkExcluded(endpoint))
 }
 
 query predicate taintedPathFilteredTruePositives(DataFlow::Node endpoint, string reason) {
   endpoint instanceof TaintedPath::Sink and
-  reason = dropPrefix(TaintedPathATM::SinkEndpointFilter::getAReasonSinkExcluded(endpoint)) and
-  reason != "argument to modeled function"
+  reason = dropPrefix(TaintedPathATM::SinkEndpointFilter::getAReasonSinkExcluded(endpoint))
 }
 
 query predicate xssFilteredTruePositives(DataFlow::Node endpoint, string reason) {
   endpoint instanceof DomBasedXss::Sink and
-  reason = dropPrefix(XssATM::SinkEndpointFilter::getAReasonSinkExcluded(endpoint)) and
-  reason != "argument to modeled function"
+  reason = dropPrefix(XssATM::SinkEndpointFilter::getAReasonSinkExcluded(endpoint))
 }

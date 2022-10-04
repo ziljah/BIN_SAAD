@@ -29,21 +29,24 @@ string dropPrefix(string reason) {
 
 query predicate nosqlFilteredTruePositives(DataFlow::Node endpoint, string reason) {
   endpoint instanceof NosqlInjection::Sink and
-  reason = dropPrefix(NosqlInjectionATM::SinkEndpointFilter::getAReasonSinkExcluded(endpoint)) and
+  reason = dropPrefix(NosqlInjectionAtm::SinkEndpointFilter::getAReasonSinkExcluded(endpoint)) and
   not reason = ["argument to modeled function", "modeled sink", "modeled database access"]
 }
 
 query predicate sqlFilteredTruePositives(DataFlow::Node endpoint, string reason) {
   endpoint instanceof SqlInjection::Sink and
-  reason = dropPrefix(SqlInjectionATM::SinkEndpointFilter::getAReasonSinkExcluded(endpoint))
+  reason = dropPrefix(SqlInjectionAtm::SinkEndpointFilter::getAReasonSinkExcluded(endpoint)) and
+  reason != "argument to modeled function"
 }
 
 query predicate taintedPathFilteredTruePositives(DataFlow::Node endpoint, string reason) {
   endpoint instanceof TaintedPath::Sink and
-  reason = dropPrefix(TaintedPathATM::SinkEndpointFilter::getAReasonSinkExcluded(endpoint))
+  reason = dropPrefix(TaintedPathAtm::SinkEndpointFilter::getAReasonSinkExcluded(endpoint)) and
+  reason != "argument to modeled function"
 }
 
 query predicate xssFilteredTruePositives(DataFlow::Node endpoint, string reason) {
   endpoint instanceof DomBasedXss::Sink and
-  reason = dropPrefix(XssATM::SinkEndpointFilter::getAReasonSinkExcluded(endpoint))
+  reason = dropPrefix(XssAtm::SinkEndpointFilter::getAReasonSinkExcluded(endpoint)) and
+  reason != "argument to modeled function"
 }

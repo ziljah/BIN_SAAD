@@ -21,7 +21,7 @@ query predicate tokenFeatures(DataFlow::Node endpoint, string featureName, strin
     not exists(SqlInjectionAtm::SinkEndpointFilter::getAReasonSinkExcluded(endpoint)) or
     not exists(TaintedPathAtm::SinkEndpointFilter::getAReasonSinkExcluded(endpoint)) or
     not exists(XssAtm::SinkEndpointFilter::getAReasonSinkExcluded(endpoint)) or
-    StandardEndpointFilters::isArgumentToModeledFunction(endpoint)
+    StandardEndpointFilters::getAnEndpointLabel(endpoint) = "legacy/argument-to-modeled-function"
   ) and
   EndpointFeatures::tokenFeatures(endpoint, featureName, featureValue)
 }

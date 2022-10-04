@@ -13,7 +13,16 @@ private import CoreKnowledge as CoreKnowledge
 
 string getAnEndpointLabel(DataFlow::Node n) {
   result = "legacy/reason-sink-excluded/" + getAReasonSinkExcluded(n)
+  or
+  result = "legacy/likely-external-library-call" and getALikelyExternalLibraryCall() = n
+  or
+  result = "legacy/flows-to-argument-of-likely-external-library-call" and
+  flowsToArgumentOfLikelyExternalLibraryCall(n)
+  or
+  result = "legacy/argument-to-modeled-function" and isArgumentToModeledFunction(n)
 }
+
+DataFlow::Node getALabeledEndpoint(string label) { getAnEndpointLabel(result) = label }
 
 /** Provides a set of reasons why a given data flow node should be excluded as a sink candidate. */
 private string getAReasonSinkExcluded(DataFlow::Node n) {
@@ -39,7 +48,7 @@ private string getAReasonSinkExcluded(DataFlow::Node n) {
 /**
  * Holds if the node `n` is an argument to a function that has a manual model.
  */
-predicate isArgumentToModeledFunction(DataFlow::Node n) {
+private predicate isArgumentToModeledFunction(DataFlow::Node n) {
   exists(DataFlow::InvokeNode invk, DataFlow::Node known |
     invk.getAnArgument() = n and invk.getAnArgument() = known and isSomeModeledArgument(known)
   )
@@ -48,7 +57,7 @@ predicate isArgumentToModeledFunction(DataFlow::Node n) {
 /**
  * Holds if the node `n` is an argument that has a manual model.
  */
-predicate isSomeModeledArgument(DataFlow::Node n) {
+private predicate isSomeModeledArgument(DataFlow::Node n) {
   CoreKnowledge::isKnownLibrarySink(n) or
   CoreKnowledge::isKnownStepSrc(n) or
   CoreKnowledge::isOtherModeledArgument(n, _)
@@ -57,12 +66,12 @@ predicate isSomeModeledArgument(DataFlow::Node n) {
 /**
  * Holds if `n` appears to be a numeric value.
  */
-predicate isNumeric(DataFlow::Node n) { isReadFrom(n, ".*index.*") }
+private predicate isNumeric(DataFlow::Node n) { isReadFrom(n, ".*index.*") }
 
 /**
  * Holds if `n` is an argument to a library without sinks.
  */
-predicate isArgumentToSinklessLibrary(DataFlow::Node n) {
+private predicate isArgumentToSinklessLibrary(DataFlow::Node n) {
   exists(DataFlow::InvokeNode invk, DataFlow::SourceNode commonSafeLibrary, string libraryName |
     libraryName = ["slugify", "striptags", "marked"]
   |
@@ -72,19 +81,19 @@ predicate isArgumentToSinklessLibrary(DataFlow::Node n) {
   )
 }
 
-predicate isSanitizer(DataFlow::Node n) {
+private predicate isSanitizer(DataFlow::Node n) {
   exists(DataFlow::CallNode call | n = call.getAnArgument() |
     call.getCalleeName().regexpMatch("(?i).*(escape|valid(ate)?|sanitize|purify).*")
   )
 }
 
-predicate isPredicate(DataFlow::Node n) {
+private predicate isPredicate(DataFlow::Node n) {
   exists(DataFlow::CallNode call | n = call.getAnArgument() |
     call.getCalleeName().regexpMatch("(equals|(|is|has|can)(_|[A-Z])).*")
   )
 }
 
-predicate isHash(DataFlow::Node n) {
+private predicate isHash(DataFlow::Node n) {
   exists(DataFlow::CallNode call | n = call.getAnArgument() |
     call.getCalleeName().regexpMatch("(?i)^(sha\\d*|md5|hash)$")
   )
@@ -96,7 +105,7 @@ predicate isHash(DataFlow::Node n) {
  * This includes direct arguments of likely external library calls as well as nested object
  * literals within those calls.
  */
-predicate flowsToArgumentOfLikelyExternalLibraryCall(DataFlow::Node n) {
+private predicate flowsToArgumentOfLikelyExternalLibraryCall(DataFlow::Node n) {
   n = getACallWithoutCallee().getAnArgument()
   or
   exists(DataFlow::SourceNode src | flowsToArgumentOfLikelyExternalLibraryCall(src) |
@@ -111,7 +120,7 @@ predicate flowsToArgumentOfLikelyExternalLibraryCall(DataFlow::Node n) {
 /**
  * Get calls which are likely to be to external non-built-in libraries.
  */
-DataFlow::CallNode getALikelyExternalLibraryCall() { result = getACallWithoutCallee() }
+private DataFlow::CallNode getALikelyExternalLibraryCall() { result = getACallWithoutCallee() }
 
 /**
  * Gets a node that flows to callback-parameter `p`.

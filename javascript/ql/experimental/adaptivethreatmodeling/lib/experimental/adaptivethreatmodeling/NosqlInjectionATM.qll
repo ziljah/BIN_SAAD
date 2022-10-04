@@ -19,7 +19,8 @@ module SinkEndpointFilter {
    * effective sink.
    */
   string getAReasonSinkExcluded(DataFlow::Node sinkCandidate) {
-    result = StandardEndpointFilters::getAnEndpointLabel(sinkCandidate)
+    result = StandardEndpointFilters::getAnEndpointLabel(sinkCandidate) and
+    result.matches("legacy/reason-sink-excluded/%")
     or
     exists(DataFlow::CallNode call | sinkCandidate = call.getAnArgument() |
       // additional databases accesses that aren't modeled yet
@@ -77,7 +78,10 @@ module SinkEndpointFilter {
     // `codeql/javascript/ql/src/semmle/javascript/heuristics/AdditionalSinks.qll`.
     // We can't reuse the class because importing that file would cause us to treat these
     // heuristic sinks as known sinks.
-    not sinkCandidate = StandardEndpointFilters::getALikelyExternalLibraryCall().getAnArgument() and
+    not sinkCandidate =
+      StandardEndpointFilters::getALabeledEndpoint("legacy/likely-external-library-call")
+          .(DataFlow::CallNode)
+          .getAnArgument() and
     not (
       isAssignedToOrConcatenatedWith(sinkCandidate, "(?i)(nosql|query)") or
       isArgTo(sinkCandidate, "(?i)(query)")

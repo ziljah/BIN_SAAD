@@ -23,9 +23,7 @@ import experimental.adaptivethreatmodeling.TaintedPathATM as TaintedPathAtm
 import experimental.adaptivethreatmodeling.XssATM as XssAtm
 
 bindingset[reason]
-string dropPrefix(string reason) {
-  result = reason.replaceAll("legacy/reason-sink-excluded/", "")
-}
+string dropPrefix(string reason) { result = reason.replaceAll("legacy/reason-sink-excluded/", "") }
 
 query predicate nosqlFilteredTruePositives(DataFlow::Node endpoint, string reason) {
   endpoint instanceof NosqlInjection::Sink and

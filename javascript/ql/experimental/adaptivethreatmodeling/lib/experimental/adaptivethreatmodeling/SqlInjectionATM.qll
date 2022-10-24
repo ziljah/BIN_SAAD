@@ -8,7 +8,7 @@ import semmle.javascript.heuristics.SyntacticHeuristics
 import semmle.javascript.security.dataflow.SqlInjectionCustomizations
 import AdaptiveThreatModeling
 import CoreKnowledge as CoreKnowledge
-import StandardEndpointFilters as StandardEndpointFilters
+import StandardEndpointLabels as StandardEndpointLabels
 
 /**
  * This module provides logic to filter candidate sinks to those which are likely SQL injection
@@ -25,7 +25,10 @@ module SinkEndpointFilter {
    * effective sink.
    */
   string getAReasonSinkExcluded(DataFlow::Node sinkCandidate) {
-    result = StandardEndpointFilters::getAReasonSinkExcluded(sinkCandidate)
+    result =
+      any(StandardEndpointLabels::Labels::EndpointLabeller l |
+        l instanceof StandardEndpointLabels::Labels::LegacyReasonSinkExcludedEndpointLabeller
+      ).getLabel(sinkCandidate)
     or
     exists(DataFlow::CallNode call | sinkCandidate = call.getAnArgument() |
       // prepared statements for SQL
@@ -49,7 +52,11 @@ module SinkEndpointFilter {
     // `codeql/javascript/ql/src/semmle/javascript/heuristics/AdditionalSinks.qll`.
     // We can't reuse the class because importing that file would cause us to treat these
     // heuristic sinks as known sinks.
-    not StandardEndpointFilters::flowsToArgumentOfLikelyExternalLibraryCall(sinkCandidate) and
+    not exists(
+      StandardEndpointLabels::Labels::LegacyFlowsToLikelyExternalLibraryCallEndpointLabeller l
+    |
+      exists(l.getLabel(sinkCandidate))
+    ) and
     not (
       isAssignedToOrConcatenatedWith(sinkCandidate, "(?i)(sql|query)") or
       isArgTo(sinkCandidate, "(?i)(query)") or

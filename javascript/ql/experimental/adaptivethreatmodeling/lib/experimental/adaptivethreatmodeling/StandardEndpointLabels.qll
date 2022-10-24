@@ -14,7 +14,8 @@ private import StandardEndpointFilters as StandardEndpointFilters
 
 module Labels {
   private newtype TEndpointLabeller =
-    TLegacyEndpointLabeller() or
+    TLegacyIsLikelyExternalLibraryCallEndpointLabeller() or
+    TLegacyFlowsToLikelyExternalLibraryCallEndpointLabeller() or
     TLegacyReasonSinkExcludedEndpointLabeller(string innerReason) {
       innerReason =
         "legacy/reason-sink-excluded/" +
@@ -49,16 +50,22 @@ module Labels {
     string toString() { result = getRange() }
   }
 
-  class LegacyEndpointLabeller extends EndpointLabeller, TLegacyEndpointLabeller {
+  class LegacyFlowsToLikelyExternalLibraryCallEndpointLabeller extends EndpointLabeller, TLegacyFlowsToLikelyExternalLibraryCallEndpointLabeller {
     override string getLabel(DataFlow::Node n) {
-      n = StandardEndpointFilters::getALikelyExternalLibraryCall() and
-      result = "legacy/likely-external-library-call/is"
-      or
       StandardEndpointFilters::flowsToArgumentOfLikelyExternalLibraryCall(n) and
       result = "legacy/likely-external-library-call/flows-to"
     }
 
-    override string getRange() { result = "legacy/likely-external-library-call/**" }
+    override string getRange() { result = "legacy/likely-external-library-call/flows-to" }
+  }
+
+  class LegacyIsLikelyExternalLibraryCallEndpointLabeller extends EndpointLabeller, TLegacyIsLikelyExternalLibraryCallEndpointLabeller {
+    override string getLabel(DataFlow::Node n) {
+      n = StandardEndpointFilters::getALikelyExternalLibraryCall() and
+      result = "legacy/likely-external-library-call/is"
+    }
+
+    override string getRange() { result = "legacy/likely-external-library-call/is" }
   }
 
   class LegacyReasonSinkExcludedEndpointLabeller extends EndpointLabeller,

@@ -8,7 +8,7 @@ import semmle.javascript.heuristics.SyntacticHeuristics
 import semmle.javascript.security.dataflow.TaintedPathCustomizations
 import AdaptiveThreatModeling
 import CoreKnowledge as CoreKnowledge
-import StandardEndpointFilters as StandardEndpointFilters
+private import StandardEndpointLabels as StandardEndpointLabels
 
 /**
  * This module provides logic to filter candidate sinks to those which are likely path injection
@@ -25,7 +25,10 @@ module SinkEndpointFilter {
    * effective sink.
    */
   string getAReasonSinkExcluded(DataFlow::Node sinkCandidate) {
-    result = StandardEndpointFilters::getAReasonSinkExcluded(sinkCandidate)
+    result =
+      any(StandardEndpointLabels::Labels::EndpointLabeller l |
+        l instanceof StandardEndpointLabels::Labels::LegacyReasonSinkExcludedEndpointLabeller
+      ).getLabel(sinkCandidate)
     or
     // Require path injection sink candidates to be (a) arguments to external library calls
     // (possibly indirectly), or (b) heuristic sinks.
@@ -34,7 +37,11 @@ module SinkEndpointFilter {
     // `codeql/javascript/ql/src/semmle/javascript/heuristics/AdditionalSinks.qll`.
     // We can't reuse the class because importing that file would cause us to treat these
     // heuristic sinks as known sinks.
-    not StandardEndpointFilters::flowsToArgumentOfLikelyExternalLibraryCall(sinkCandidate) and
+    not exists(
+      StandardEndpointLabels::Labels::LegacyFlowsToLikelyExternalLibraryCallEndpointLabeller l
+    |
+      exists(l.getLabel(sinkCandidate))
+    ) and
     not (
       isAssignedToOrConcatenatedWith(sinkCandidate, "(?i)(file|folder|dir|absolute)")
       or

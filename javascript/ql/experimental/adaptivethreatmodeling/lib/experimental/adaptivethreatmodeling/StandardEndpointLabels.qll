@@ -14,8 +14,12 @@ private import StandardEndpointFilters as StandardEndpointFilters
 
 module Labels {
   private newtype TEndpointLabeller =
-    TLegacyIsLikelyExternalLibraryCallEndpointLabeller() or
     TLegacyFlowsToLikelyExternalLibraryCallEndpointLabeller() or
+    TLegacyIsLikelyExternalLibraryCallEndpointLabeller() or
+    TLegacyModeledDbAccess() or
+    TLegacyModeledHttp(string kind) { kind = ["request", "response"] } or
+    TLegacyModeledSink() or
+    TLegacyModeledStepSource() or
     TLegacyReasonSinkExcludedEndpointLabeller(string innerReason) {
       innerReason =
         "legacy/reason-sink-excluded/" +
@@ -28,11 +32,7 @@ module Labels {
             "numeric", //
             "in " + ["externs", "generated", "library", "test"] + " file" //
           ]
-    } or
-    TLegacyModeledDbAccess() or
-    TLegacyModeledSink() or
-    TLegacyModeledStepSource() or
-    TLegacyModeledHttp(string kind) { kind = ["request", "response"] }
+    }
 
   /**
    * An endpoint labeller defines logic that labels a subset of endpoints.
@@ -68,24 +68,6 @@ module Labels {
     override string getRange() { result = "legacy/likely-external-library-call/is" }
   }
 
-  class LegacyReasonSinkExcludedEndpointLabeller extends EndpointLabeller,
-    TLegacyReasonSinkExcludedEndpointLabeller {
-    override string getLabel(DataFlow::Node n) {
-      exists(string inner |
-        this = TLegacyReasonSinkExcludedEndpointLabeller(inner) and
-        inner = StandardEndpointFilters::getAReasonSinkExcluded(n)
-      |
-        result = inner
-      )
-    }
-
-    override string getRange() {
-      exists(string inner | this = TLegacyReasonSinkExcludedEndpointLabeller(inner) |
-        result = inner
-      )
-    }
-  }
-
   class LegacyModeledDbAccessEndpointLabeller extends EndpointLabeller, TLegacyModeledDbAccess {
     override string getLabel(DataFlow::Node n) {
       exists(DataFlow::CallNode call | n = call.getAnArgument() |
@@ -99,6 +81,26 @@ module Labels {
     }
 
     override string getRange() { result = "legacy/modeled/db-access/**" }
+  }
+
+  class LegacyModeledHttpEndpointLabeller extends Labels::EndpointLabeller, TLegacyModeledHttp {
+    string kind;
+
+    LegacyModeledHttpEndpointLabeller() { this = TLegacyModeledHttp(kind) }
+
+    override string getLabel(DataFlow::Node n) {
+      exists(DataFlow::CallNode call | n = call.getAnArgument() |
+        kind = "request" and
+        call.getReceiver() instanceof Http::RequestNode and
+        result = "legacy/modeled/http/request"
+        or
+        kind = "response" and
+        call.getReceiver() instanceof Http::ResponseNode and
+        result = "legacy/modeled/http/response"
+      )
+    }
+
+    override string getRange() { result = "legacy/modeled/http/" + kind }
   }
 
   class LegacyModeledSinkEndpointLabeller extends Labels::EndpointLabeller, TLegacyModeledSink {
@@ -120,24 +122,22 @@ module Labels {
     override string getRange() { result = "legacy/modeled/step-source" }
   }
 
-  class LegacyModeledHttpEndpointLabeller extends Labels::EndpointLabeller, TLegacyModeledHttp {
-    string kind;
-
-    LegacyModeledHttpEndpointLabeller() { this = TLegacyModeledHttp(kind) }
-
+  class LegacyReasonSinkExcludedEndpointLabeller extends EndpointLabeller,
+    TLegacyReasonSinkExcludedEndpointLabeller {
     override string getLabel(DataFlow::Node n) {
-      exists(DataFlow::CallNode call | n = call.getAnArgument() |
-        kind = "request" and
-        call.getReceiver() instanceof Http::RequestNode and
-        result = "legacy/modeled/http/request"
-        or
-        kind = "response" and
-        call.getReceiver() instanceof Http::ResponseNode and
-        result = "legacy/modeled/http/response"
+      exists(string inner |
+        this = TLegacyReasonSinkExcludedEndpointLabeller(inner) and
+        inner = StandardEndpointFilters::getAReasonSinkExcluded(n)
+      |
+        result = inner
       )
     }
 
-    override string getRange() { result = "legacy/modeled/http/" + kind }
+    override string getRange() {
+      exists(string inner | this = TLegacyReasonSinkExcludedEndpointLabeller(inner) |
+        result = inner
+      )
+    }
   }
 }
 

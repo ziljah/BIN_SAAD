@@ -8,7 +8,7 @@ private import semmle.javascript.heuristics.SyntacticHeuristics
 private import semmle.javascript.security.dataflow.DomBasedXssCustomizations
 import AdaptiveThreatModeling
 import CoreKnowledge as CoreKnowledge
-import StandardEndpointFilters as StandardEndpointFilters
+private import StandardEndpointLabels as StandardEndpointLabels
 
 /**
  * This module provides logic to filter candidate sinks to those which are likely XSS sinks.
@@ -24,11 +24,13 @@ module SinkEndpointFilter {
    * effective sink.
    */
   string getAReasonSinkExcluded(DataFlow::Node sinkCandidate) {
-    result = StandardEndpointFilters::getAReasonSinkExcluded(sinkCandidate)
+    result =
+      any(StandardEndpointLabels::Labels::EndpointLabeller l |
+        l instanceof StandardEndpointLabels::Labels::LegacyReasonSinkExcludedEndpointLabeller
+      ).getLabel(sinkCandidate)
     or
-    exists(DataFlow::CallNode call | sinkCandidate = call.getAnArgument() |
-      call.getCalleeName() = "setState"
-    ) and
+    any(StandardEndpointLabels::Labels::LegacyArgToEndpointLabeller l).getLabel(sinkCandidate) =
+      "legacy/arg-to/setState" and
     result = "setState calls ought to be safe in react applications"
     or
     // Require XSS sink candidates to be (a) arguments to external library calls (possibly
@@ -38,7 +40,10 @@ module SinkEndpointFilter {
     // `codeql/javascript/ql/src/semmle/javascript/heuristics/AdditionalSinks.qll`.
     // We can't reuse the class because importing that file would cause us to treat these
     // heuristic sinks as known sinks.
-    not StandardEndpointFilters::flowsToArgumentOfLikelyExternalLibraryCall(sinkCandidate) and
+    not exists(
+      any(StandardEndpointLabels::Labels::LegacyFlowsToLikelyExternalLibraryCallEndpointLabeller l)
+          .getLabel(sinkCandidate)
+    ) and
     not (
       isAssignedToOrConcatenatedWith(sinkCandidate, "(?i)(html|innerhtml)")
       or

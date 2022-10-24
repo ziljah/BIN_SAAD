@@ -8,12 +8,12 @@
 
 private import javascript
 private import semmle.javascript.filters.ClassifyFiles as ClassifyFiles
-private import semmle.javascript.heuristics.SyntacticHeuristics
 private import CoreKnowledge as CoreKnowledge
 private import StandardEndpointFilters as StandardEndpointFilters
 
 module Labels {
   private newtype TEndpointLabeller =
+    TLegacyArgToEndpointLabeller() or
     TLegacyFlowsToLikelyExternalLibraryCallEndpointLabeller() or
     TLegacyIsLikelyExternalLibraryCallEndpointLabeller() or
     TLegacyModeledDbAccess() or
@@ -48,6 +48,16 @@ module Labels {
     abstract string getRange();
 
     string toString() { result = getRange() }
+  }
+
+  class LegacyArgToEndpointLabeller extends EndpointLabeller, TLegacyArgToEndpointLabeller {
+    override string getLabel(DataFlow::Node n) {
+      exists(DataFlow::InvokeNode call | n = call.getAnArgument() |
+        result = "legacy/arg-to/" + call.getCalleeName()
+      )
+    }
+
+    override string getRange() { result = "legacy/arg-to/**" }
   }
 
   class LegacyFlowsToLikelyExternalLibraryCallEndpointLabeller extends EndpointLabeller, TLegacyFlowsToLikelyExternalLibraryCallEndpointLabeller {

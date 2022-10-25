@@ -5,9 +5,8 @@
  */
 
 import semmle.javascript.heuristics.SyntacticHeuristics
-import semmle.javascript.security.dataflow.TaintedPathCustomizations
-import AdaptiveThreatModeling
-import CoreKnowledge as CoreKnowledge
+import semmle.javascript.security.dataflow.TaintedPathCustomizations as Classic
+import AdaptiveThreatModeling as ATM
 private import StandardEndpointLabels as StandardEndpointLabels
 
 /**
@@ -16,7 +15,7 @@ private import StandardEndpointLabels as StandardEndpointLabels
  */
 module SinkEndpointFilter {
   private import javascript
-  private import TaintedPath
+  private import Classic::TaintedPath
 
   /**
    * Provides a set of reasons why a given data flow node should be excluded as a sink candidate.
@@ -66,18 +65,18 @@ module SinkEndpointFilter {
   }
 }
 
-class TaintedPathAtmConfig extends AtmConfig {
+class TaintedPathAtmConfig extends ATM::AtmConfig {
   TaintedPathAtmConfig() { this = "TaintedPathATMConfig" }
 
-  override predicate isKnownSource(DataFlow::Node source) { source instanceof TaintedPath::Source }
+  override predicate isKnownSource(DataFlow::Node source) { source instanceof Classic::TaintedPath::Source }
 
-  override predicate isKnownSink(DataFlow::Node sink) { sink instanceof TaintedPath::Sink }
+  override predicate isKnownSink(DataFlow::Node sink) { sink instanceof Classic::TaintedPath::Sink }
 
   override predicate isEffectiveSink(DataFlow::Node sinkCandidate) {
     not exists(SinkEndpointFilter::getAReasonSinkExcluded(sinkCandidate))
   }
 
-  override EndpointType getASinkEndpointType() { result instanceof TaintedPathSinkType }
+  override ATM::EndpointType getASinkEndpointType() { result instanceof ATM::TaintedPathSinkType }
 }
 
 /** DEPRECATED: Alias for TaintedPathAtmConfig */
@@ -92,16 +91,16 @@ deprecated class TaintedPathATMConfig = TaintedPathAtmConfig;
 class Configuration extends TaintTracking::Configuration {
   Configuration() { this = "TaintedPathATM" }
 
-  override predicate isSource(DataFlow::Node source) { source instanceof TaintedPath::Source }
+  override predicate isSource(DataFlow::Node source) { source instanceof Classic::TaintedPath::Source }
 
   override predicate isSink(DataFlow::Node sink, DataFlow::FlowLabel label) {
-    label = sink.(TaintedPath::Sink).getAFlowLabel()
+    label = sink.(Classic::TaintedPath::Sink).getAFlowLabel()
     or
     // Allow effective sinks to have any taint label
     any(TaintedPathAtmConfig cfg).isEffectiveSink(sink)
   }
 
-  override predicate isSanitizer(DataFlow::Node node) { node instanceof TaintedPath::Sanitizer }
+  override predicate isSanitizer(DataFlow::Node node) { node instanceof Classic::TaintedPath::Sanitizer }
 
   override predicate isSanitizerGuard(TaintTracking::SanitizerGuardNode node) {
     node instanceof BarrierGuardNodeAsSanitizerGuardNode
@@ -111,7 +110,7 @@ class Configuration extends TaintTracking::Configuration {
     DataFlow::Node src, DataFlow::Node dst, DataFlow::FlowLabel srclabel,
     DataFlow::FlowLabel dstlabel
   ) {
-    TaintedPath::isAdditionalTaintedPathFlowStep(src, dst, srclabel, dstlabel)
+    Classic::TaintedPath::isAdditionalTaintedPathFlowStep(src, dst, srclabel, dstlabel)
   }
 }
 
@@ -125,7 +124,7 @@ class Configuration extends TaintTracking::Configuration {
  * sanitizer guards here.
  */
 class BarrierGuardNodeAsSanitizerGuardNode extends TaintTracking::LabeledSanitizerGuardNode {
-  BarrierGuardNodeAsSanitizerGuardNode() { this instanceof TaintedPath::BarrierGuardNode }
+  BarrierGuardNodeAsSanitizerGuardNode() { this instanceof Classic::TaintedPath::BarrierGuardNode }
 
   override predicate sanitizes(boolean outcome, Expr e) {
     blocks(outcome, e) or blocks(outcome, e, _)

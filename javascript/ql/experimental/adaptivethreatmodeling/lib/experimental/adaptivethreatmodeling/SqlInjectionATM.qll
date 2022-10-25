@@ -5,9 +5,8 @@
  */
 
 import semmle.javascript.heuristics.SyntacticHeuristics
-import semmle.javascript.security.dataflow.SqlInjectionCustomizations
-import AdaptiveThreatModeling
-import CoreKnowledge as CoreKnowledge
+import semmle.javascript.security.dataflow.SqlInjectionCustomizations as Classic
+import AdaptiveThreatModeling as ATM
 import StandardEndpointLabels as StandardEndpointLabels
 
 /**
@@ -67,18 +66,18 @@ module SinkEndpointFilter {
   }
 }
 
-class SqlInjectionAtmConfig extends AtmConfig {
+class SqlInjectionAtmConfig extends ATM::AtmConfig {
   SqlInjectionAtmConfig() { this = "SqlInjectionATMConfig" }
 
-  override predicate isKnownSource(DataFlow::Node source) { source instanceof SqlInjection::Source }
+  override predicate isKnownSource(DataFlow::Node source) { source instanceof Classic::SqlInjection::Source }
 
-  override predicate isKnownSink(DataFlow::Node sink) { sink instanceof SqlInjection::Sink }
+  override predicate isKnownSink(DataFlow::Node sink) { sink instanceof Classic::SqlInjection::Sink }
 
   override predicate isEffectiveSink(DataFlow::Node sinkCandidate) {
     not exists(SinkEndpointFilter::getAReasonSinkExcluded(sinkCandidate))
   }
 
-  override EndpointType getASinkEndpointType() { result instanceof SqlInjectionSinkType }
+  override ATM::EndpointType getASinkEndpointType() { result instanceof ATM::SqlInjectionSinkType }
 }
 
 /** DEPRECATED: Alias for SqlInjectionAtmConfig */
@@ -93,14 +92,14 @@ deprecated class SqlInjectionATMConfig = SqlInjectionAtmConfig;
 class Configuration extends TaintTracking::Configuration {
   Configuration() { this = "SqlInjectionATM" }
 
-  override predicate isSource(DataFlow::Node source) { source instanceof SqlInjection::Source }
+  override predicate isSource(DataFlow::Node source) { source instanceof Classic::SqlInjection::Source }
 
   override predicate isSink(DataFlow::Node sink) {
-    sink instanceof SqlInjection::Sink or any(SqlInjectionAtmConfig cfg).isEffectiveSink(sink)
+    sink instanceof Classic::SqlInjection::Sink or any(SqlInjectionAtmConfig cfg).isEffectiveSink(sink)
   }
 
   override predicate isSanitizer(DataFlow::Node node) {
     super.isSanitizer(node) or
-    node instanceof SqlInjection::Sanitizer
+    node instanceof Classic::SqlInjection::Sanitizer
   }
 }

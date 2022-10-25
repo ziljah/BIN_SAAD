@@ -6,9 +6,8 @@
 
 import javascript
 private import semmle.javascript.heuristics.SyntacticHeuristics
-private import semmle.javascript.security.dataflow.NosqlInjectionCustomizations
-import AdaptiveThreatModeling
-private import CoreKnowledge as CoreKnowledge
+private import semmle.javascript.security.dataflow.NosqlInjectionCustomizations as Classic
+import AdaptiveThreatModeling as ATM
 private import StandardEndpointLabels as StandardEndpointLabels
 
 module SinkEndpointFilter {
@@ -70,20 +69,20 @@ module SinkEndpointFilter {
   }
 }
 
-class NosqlInjectionAtmConfig extends AtmConfig {
+class NosqlInjectionAtmConfig extends ATM::AtmConfig {
   NosqlInjectionAtmConfig() { this = "NosqlInjectionATMConfig" }
 
   override predicate isKnownSource(DataFlow::Node source) {
-    source instanceof NosqlInjection::Source or TaintedObject::isSource(source, _)
+    source instanceof Classic::NosqlInjection::Source or Classic::TaintedObject::isSource(source, _)
   }
 
-  override predicate isKnownSink(DataFlow::Node sink) { sink instanceof NosqlInjection::Sink }
+  override predicate isKnownSink(DataFlow::Node sink) { sink instanceof Classic::NosqlInjection::Sink }
 
   override predicate isEffectiveSink(DataFlow::Node sinkCandidate) {
     not exists(SinkEndpointFilter::getAReasonSinkExcluded(sinkCandidate))
   }
 
-  override EndpointType getASinkEndpointType() { result instanceof NosqlInjectionSinkType }
+  override ATM::EndpointType getASinkEndpointType() { result instanceof ATM::NosqlInjectionSinkType }
 }
 
 /** DEPRECATED: Alias for NosqlInjectionAtmConfig */
@@ -93,11 +92,11 @@ deprecated class NosqlInjectionATMConfig = NosqlInjectionAtmConfig;
 predicate isBaseAdditionalFlowStep(
   DataFlow::Node src, DataFlow::Node trg, DataFlow::FlowLabel inlbl, DataFlow::FlowLabel outlbl
 ) {
-  TaintedObject::step(src, trg, inlbl, outlbl)
+  Classic::TaintedObject::step(src, trg, inlbl, outlbl)
   or
   // additional flow step to track taint through NoSQL query objects
-  inlbl = TaintedObject::label() and
-  outlbl = TaintedObject::label() and
+  inlbl = Classic::TaintedObject::label() and
+  outlbl = Classic::TaintedObject::label() and
   exists(NoSql::Query query, DataFlow::SourceNode queryObj |
     queryObj.flowsTo(query) and
     queryObj.flowsTo(trg) and
@@ -132,14 +131,14 @@ DataFlow::Node getASubexpressionWithinQuery(DataFlow::Node query) {
 class Configuration extends TaintTracking::Configuration {
   Configuration() { this = "NosqlInjectionATM" }
 
-  override predicate isSource(DataFlow::Node source) { source instanceof NosqlInjection::Source }
+  override predicate isSource(DataFlow::Node source) { source instanceof Classic::NosqlInjection::Source }
 
   override predicate isSource(DataFlow::Node source, DataFlow::FlowLabel label) {
-    TaintedObject::isSource(source, label)
+    Classic::TaintedObject::isSource(source, label)
   }
 
   override predicate isSink(DataFlow::Node sink, DataFlow::FlowLabel label) {
-    sink.(NosqlInjection::Sink).getAFlowLabel() = label
+    sink.(Classic::NosqlInjection::Sink).getAFlowLabel() = label
     or
     // Allow effective sinks to have any taint label
     any(NosqlInjectionAtmConfig cfg).isEffectiveSink(sink)
@@ -147,11 +146,11 @@ class Configuration extends TaintTracking::Configuration {
 
   override predicate isSanitizer(DataFlow::Node node) {
     super.isSanitizer(node) or
-    node instanceof NosqlInjection::Sanitizer
+    node instanceof Classic::NosqlInjection::Sanitizer
   }
 
   override predicate isSanitizerGuard(TaintTracking::SanitizerGuardNode guard) {
-    guard instanceof TaintedObject::SanitizerGuard
+    guard instanceof Classic::TaintedObject::SanitizerGuard
   }
 
   override predicate isAdditionalFlowStep(

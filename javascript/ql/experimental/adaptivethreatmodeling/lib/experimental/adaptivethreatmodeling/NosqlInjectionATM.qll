@@ -85,9 +85,6 @@ class NosqlInjectionAtmConfig extends ATM::AtmConfig {
   override ATM::EndpointType getASinkEndpointType() { result instanceof ATM::NosqlInjectionSinkType }
 }
 
-/** DEPRECATED: Alias for NosqlInjectionAtmConfig */
-deprecated class NosqlInjectionATMConfig = NosqlInjectionAtmConfig;
-
 /** Holds if src -> trg is an additional flow step in the non-boosted NoSql injection security query. */
 predicate isBaseAdditionalFlowStep(
   DataFlow::Node src, DataFlow::Node trg, DataFlow::FlowLabel inlbl, DataFlow::FlowLabel outlbl

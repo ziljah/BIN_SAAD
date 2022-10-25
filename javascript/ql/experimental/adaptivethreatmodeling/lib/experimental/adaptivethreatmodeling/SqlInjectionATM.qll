@@ -80,9 +80,6 @@ class SqlInjectionAtmConfig extends ATM::AtmConfig {
   override ATM::EndpointType getASinkEndpointType() { result instanceof ATM::SqlInjectionSinkType }
 }
 
-/** DEPRECATED: Alias for SqlInjectionAtmConfig */
-deprecated class SqlInjectionATMConfig = SqlInjectionAtmConfig;
-
 /**
  * A taint-tracking configuration for reasoning about SQL injection vulnerabilities.
  *

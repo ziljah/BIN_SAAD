@@ -79,9 +79,6 @@ class TaintedPathAtmConfig extends ATM::AtmConfig {
   override ATM::EndpointType getASinkEndpointType() { result instanceof ATM::TaintedPathSinkType }
 }
 
-/** DEPRECATED: Alias for TaintedPathAtmConfig */
-deprecated class TaintedPathATMConfig = TaintedPathAtmConfig;
-
 /**
  * A taint-tracking configuration for reasoning about path injection vulnerabilities.
  *

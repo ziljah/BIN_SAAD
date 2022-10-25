@@ -78,9 +78,6 @@ class DomBasedXssAtmConfig extends ATM::AtmConfig {
   override ATM::EndpointType getASinkEndpointType() { result instanceof ATM::XssSinkType }
 }
 
-/** DEPRECATED: Alias for DomBasedXssAtmConfig */
-deprecated class DomBasedXssATMConfig = DomBasedXssAtmConfig;
-
 /**
  * A taint-tracking configuration for reasoning about XSS vulnerabilities.
  *

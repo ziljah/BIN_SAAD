@@ -13,9 +13,10 @@
  *       external/cwe/cwe-089
  */
 
-import experimental.adaptivethreatmodeling.SqlInjectionATM
 import ATM::ResultsInfo
 import DataFlow::PathGraph
+import experimental.adaptivethreatmodeling.AdaptiveThreatModeling
+import experimental.adaptivethreatmodeling.SqlInjectionATM
 
 from DataFlow::Configuration cfg, DataFlow::PathNode source, DataFlow::PathNode sink, float score
 where

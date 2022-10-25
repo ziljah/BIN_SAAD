@@ -20,6 +20,7 @@
 import ATM::ResultsInfo
 import DataFlow::PathGraph
 import experimental.adaptivethreatmodeling.TaintedPathATM
+import experimental.adaptivethreatmodeling.AdaptiveThreatModeling
 
 from DataFlow::Configuration cfg, DataFlow::PathNode source, DataFlow::PathNode sink, float score
 where

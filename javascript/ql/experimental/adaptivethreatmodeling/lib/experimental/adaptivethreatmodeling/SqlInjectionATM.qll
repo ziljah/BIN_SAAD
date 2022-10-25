@@ -6,8 +6,9 @@
 
 import semmle.javascript.heuristics.SyntacticHeuristics
 import semmle.javascript.security.dataflow.SqlInjectionCustomizations as Classic
-import AdaptiveThreatModeling as ATM
-import StandardEndpointLabels as StandardEndpointLabels
+
+private import StandardEndpointLabels as StandardEndpointLabels
+private import AdaptiveThreatModeling as ATM
 
 /**
  * This module provides logic to filter candidate sinks to those which are likely SQL injection

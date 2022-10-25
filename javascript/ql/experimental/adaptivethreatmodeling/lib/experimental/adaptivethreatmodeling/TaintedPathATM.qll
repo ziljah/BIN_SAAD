@@ -6,8 +6,9 @@
 
 import semmle.javascript.heuristics.SyntacticHeuristics
 import semmle.javascript.security.dataflow.TaintedPathCustomizations as Classic
-import AdaptiveThreatModeling as ATM
+
 private import StandardEndpointLabels as StandardEndpointLabels
+private import AdaptiveThreatModeling as ATM
 
 /**
  * This module provides logic to filter candidate sinks to those which are likely path injection

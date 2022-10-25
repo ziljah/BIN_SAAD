@@ -60,7 +60,8 @@ module Labels {
     override string getRange() { result = "legacy/arg-to/**" }
   }
 
-  class LegacyFlowsToLikelyExternalLibraryCallEndpointLabeller extends EndpointLabeller, TLegacyFlowsToLikelyExternalLibraryCallEndpointLabeller {
+  class LegacyFlowsToLikelyExternalLibraryCallEndpointLabeller extends EndpointLabeller,
+    TLegacyFlowsToLikelyExternalLibraryCallEndpointLabeller {
     override string getLabel(DataFlow::Node n) {
       StandardEndpointFilters::flowsToArgumentOfLikelyExternalLibraryCall(n) and
       result = "legacy/likely-external-library-call/flows-to"
@@ -69,7 +70,8 @@ module Labels {
     override string getRange() { result = "legacy/likely-external-library-call/flows-to" }
   }
 
-  class LegacyIsLikelyExternalLibraryCallEndpointLabeller extends EndpointLabeller, TLegacyIsLikelyExternalLibraryCallEndpointLabeller {
+  class LegacyIsLikelyExternalLibraryCallEndpointLabeller extends EndpointLabeller,
+    TLegacyIsLikelyExternalLibraryCallEndpointLabeller {
     override string getLabel(DataFlow::Node n) {
       n = StandardEndpointFilters::getALikelyExternalLibraryCall() and
       result = "legacy/likely-external-library-call/is"

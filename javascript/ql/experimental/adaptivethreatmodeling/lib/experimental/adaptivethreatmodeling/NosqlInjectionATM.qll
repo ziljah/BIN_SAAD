@@ -7,10 +7,23 @@
 import javascript
 private import semmle.javascript.heuristics.SyntacticHeuristics
 private import semmle.javascript.security.dataflow.NosqlInjectionCustomizations as Classic
-import AdaptiveThreatModeling as ATM
+private import AdaptiveThreatModeling as ATM
 private import StandardEndpointLabels as StandardEndpointLabels
+import EndpointTypes
 
 module SinkEndpointFilter {
+  class NosqlInjectionLabelTrainingSelectionCfg extends StandardEndpointLabels::LabelSelectionCfg {
+    NosqlInjectionLabelTrainingSelectionCfg() { this = "NosqlInjectionLabelTrainingSelectionCfg" }
+
+    override EndpointType getQuery() {
+      result = any(NosqlInjectionSinkType t)
+    }
+
+    override StandardEndpointLabels::Reason classify(DataFlow::Node n) {
+      none()
+    }
+  }
+
   /**
    * Provides a set of reasons why a given data flow node should be excluded as a sink candidate.
    *

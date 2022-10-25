@@ -6,7 +6,7 @@
 
 private import semmle.javascript.heuristics.SyntacticHeuristics
 private import semmle.javascript.security.dataflow.DomBasedXssCustomizations as Classic
-import AdaptiveThreatModeling as ATM
+private import AdaptiveThreatModeling as ATM
 private import StandardEndpointLabels as StandardEndpointLabels
 
 /**
